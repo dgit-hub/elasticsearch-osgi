@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+      Taken from https://git-wip-us.apache.org/repos/asf?p=servicemix-bundles.git;
+
+      Extended with:
+        * Lucene package export (org.apache.lucene.search.join;version=${lucene.version})
+        * Elasticsearch Java REST API Client (Added to Elasticsearch in 5.x)
+
+      Licensed to the Apache Software Foundation (ASF) under one or more
+      contributor license agreements.  See the NOTICE file distributed with
+      this work for additional information regarding copyright ownership.
+      The ASF licenses this file to You under the Apache License, Version 2.0
+      (the "License"); you may not use this file except in compliance with
+      the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+  -->
+  <groupId>com.dgitsystems.3rdparty.elasticsearch</groupId>
+  <artifactId>elasticsearch-osgi</artifactId>
+  <version>5.3.0</version>
+  <name>DGIT Systems :: 3rdParty OSGI Bundles :: ${pkgArtifactId}</name>
+  <description>This OSGi bundle wraps ${pkgArtifactId} ${elasticsearch.version} jar file.</description>
+  <packaging>bundle</packaging>
+
+  <properties>
+    <pkgGroupId>org.elasticsearch</pkgGroupId>
+    <pkgArtifactId>elasticsearch</pkgArtifactId>
+    <elasticsearch.version>${project.version}</elasticsearch.version>
+    <lucene.version>6.4.1</lucene.version>
+    <httpcore.version>4.4.5</httpcore.version>
+    <bundle.export.package>
+      org.apache.lucene.search.join;version=${lucene.version},
+      org.elasticsearch*;version=${elasticsearch.version}
+    </bundle.export.package>
+    <bundle.import.package>
+      com.google.common.collect,
+      com.fasterxml.jackson.core;version="[2.6,3)",
+      com.fasterxml.jackson.dataformat.yaml;version="[2.6,3)",
+      com.fasterxml.jackson.dataformat.smile;version="[2.6,3)",
+      com.sun.jna;resolution:=optional,
+      com.ning.compress.lzf.util,
+      *;resolution:=optional
+    </bundle.import.package>
+    <bundle.private.package>
+      org.joda.time*;-split-package:=merge-first,
+      org.apache.lucene*;-split-package:=merge-first,
+      org.tartarus.snowball*,
+      com.tdunning.math.stats,
+      com.carrotsearch.hppc*,
+      META-INF.*;-split-package:=merge-first
+    </bundle.private.package>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>${pkgGroupId}</groupId>
+      <artifactId>${pkgArtifactId}</artifactId>
+      <version>${elasticsearch.version}</version>
+    </dependency>
+
+    <!-- sources -->
+    <dependency>
+      <groupId>${pkgGroupId}</groupId>
+      <artifactId>${pkgArtifactId}</artifactId>
+      <version>${elasticsearch.version}</version>
+      <classifier>sources</classifier>
+    </dependency>
+
+    <!-- Add REST Client JAR into bundle -->
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>rest</artifactId>
+      <version>${elasticsearch.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>3.2.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Import-Package>${bundle.import.package}</Import-Package>
+            <Export-Package>${bundle.export.package}</Export-Package>
+            <Implementation-Title>${project.name}</Implementation-Title>
+            <Implementation-Version>${project.version}</Implementation-Version>
+            <Private-Package>${bundle.private.package}</Private-Package>
+          </instructions>
+          <unpackBundle>true</unpackBundle>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <includes>
+                  <include>${pkgGroupId}:${pkgArtifactId}</include>
+                  <include>org.apache.lucene:*</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <artifact>${pkgGroupId}:${pkgArtifactId}</artifact>
+                  <includes>
+                    <include>config/**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <artifact>org.apache.lucene:*</artifact>
+                  <includes>
+                    <include>META-INF/services/**</include>
+                  </includes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
